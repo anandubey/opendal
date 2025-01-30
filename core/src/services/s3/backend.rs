@@ -1105,6 +1105,9 @@ impl Access for S3Backend {
                 self.core
                     .s3_put_object_request(path, None, &OpWrite::default(), Buffer::new())?
             }
+            PresignOperation::Delete(_) => self
+                .core
+                .s3_delete_object_request(path, &OpDelete::default())?,
         };
 
         self.core.sign_query(&mut req, expire).await?;

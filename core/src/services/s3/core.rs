@@ -43,6 +43,7 @@ use http::Response;
 use reqsign::AwsCredential;
 use reqsign::AwsCredentialLoad;
 use reqsign::AwsV4Signer;
+use reqwest::Request;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -519,7 +520,7 @@ impl S3Core {
         self.send(req).await
     }
 
-    pub async fn s3_delete_object(&self, path: &str, args: &OpDelete) -> Result<Response<Buffer>> {
+    pub fn s3_delete_object_request(&self, path: &str, args: &OpDelete) -> Result<Request<Buffer>> {
         let p = build_abs_path(&self.root, path);
 
         let mut url = format!("{}/{}", self.endpoint, percent_encode_path(&p));
@@ -538,9 +539,13 @@ impl S3Core {
             url.push_str(&format!("?{}", query_args.join("&")));
         }
 
-        let mut req = Request::delete(&url)
+        Request::delete(&url)
             .body(Buffer::new())
-            .map_err(new_request_build_error)?;
+            .map_err(new_request_build_error)
+    }
+
+    pub async fn s3_delete_object(&self, path: &str, args: &OpDelete) -> Result<Response<Buffer>> {
+        let mut req = self.s3_delete_object_request(path, args)?;
 
         self.sign(&mut req).await?;
 
